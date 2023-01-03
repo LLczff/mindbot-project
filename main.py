@@ -24,7 +24,7 @@ with open('db.txt') as f:
     except json.decoder.JSONDecodeError:
         user_db = ""
 
-############# Seat layout without the footpath #############
+############# Seat map without the footpath (hardcoded) #############
 # 1 mean availiable seat
 # 0 mean occupied seat
 layout = {"A": [1, 1, 0, 0, 1, 0, 0, 1],
@@ -58,8 +58,6 @@ class UserInDB(User):
 
 # check if small list contains in big list
 # get position number of available seat
-
-
 def contains(small: list, big: list):
     seat_number = []
     seat = []
@@ -210,12 +208,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    login_time = datetime.utcnow()
+    login_time = datetime.utcnow() #get timestamp
 
     return {"access_token": access_token, "token_type": "bearer", "timestamp": login_time}
 
 
-@app.get("/users/me/", response_model=User)
+@app.get("/users/me/", response_model=User) #test authentication
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
