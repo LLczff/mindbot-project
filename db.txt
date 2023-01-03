@@ -1,0 +1,1 @@
+{"johndoe@example.com": {"firstname": "john", "lastname": "doe", "birth": "01/01/2022", "email": "johndoe@example.com", "hashed_password": "$2b$12$ZvoDzJLUEmSK55UBgC3WW.AKkNz/7zT5PufnIfmgJtna2TRZjhv2W"}}
