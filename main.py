@@ -216,7 +216,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": access_token, "token_type": "bearer", "timestamp": login_time}
 
 
-@app.get("/users/me/") #authentication and look into database info for testing purpose
+@app.get("/database") #authentication and look into database info for testing purpose
 async def read_database_info(current_user: User = Depends(get_current_user)):
     db_data = get_db('db.txt')
     return db_data
