@@ -17,22 +17,6 @@ SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-############# Database #############
-with open('db.txt') as f:
-    try:
-        user_db = json.loads(f.read())
-    except json.decoder.JSONDecodeError:
-        user_db = ""
-
-############# Seat map without the footpath (hardcoded) #############
-# 1 mean availiable seat
-# 0 mean occupied seat
-layout = {"A": [1, 1, 0, 0, 1, 0, 0, 1],
-          "B": [0, 0, 0, 1, 0, 0, 0, 0],
-          "C": [1, 1, 1, 1, 1, 1, 0, 0],
-          "D": [1, 1, 1, 0, 1, 1, 1, 1],
-          "E": [1, 0, 0, 1, 1, 1, 0, 0]}
-
 
 ############# Classes #############
 
@@ -50,6 +34,37 @@ class UserInDB(User):
     hashed_password: str
 
 ############# Functions #############
+
+# get database from text file
+def get_db(path):
+    with open(path) as f:
+        try:
+            db = json.loads(f.read())
+        except json.decoder.JSONDecodeError:
+            db = ""
+    return db
+
+
+def create_seat_map(path, col):
+    #get occupied seat from text file
+    f = open(path,'r')
+    lines = f.readlines()
+    reserved_seat=[]
+    for x in lines:
+        reserved_seat.append(x.split()[col])
+    f.close()
+
+    #create seat layout
+    layout = {}
+    for row in ["A","B","C","D","E"]:
+        layout[row] = [1]*8
+    
+    #update occupied seat in seat layout
+    for seat in reserved_seat:
+        layout[seat[0]][int(seat[1])-1] = 0
+
+    return layout
+
 
 # check if small list contains in big list
 # get position number of available seat
@@ -134,6 +149,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = TokenData(email=email)
     except JWTError:
         raise credentials_exception
+    user_db = get_db('db.txt')
     user = get_user(user_db, email=token_data.email)
     if user is None:
         raise credentials_exception
@@ -150,11 +166,7 @@ async def register(firstname: str, lastname: str, birth: str, email: str, passwo
     )
 
     # get data from database
-    with open('db.txt') as f:
-        try:
-            user_db = json.loads(f.read())
-        except json.decoder.JSONDecodeError:
-            user_db = ""
+    user_db = get_db('db.txt')
 
     # check if repeated email
     if email in user_db:
@@ -185,11 +197,7 @@ async def register(firstname: str, lastname: str, birth: str, email: str, passwo
 @app.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     # get data from database
-    with open('db.txt') as f:
-        try:
-            user_db = json.loads(f.read())
-        except json.decoder.JSONDecodeError:
-            user_db = ""
+    user_db = get_db('db.txt')
 
     user = authenticate_user(user_db, form_data.username, form_data.password)
     if not user:
@@ -208,14 +216,16 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": access_token, "token_type": "bearer", "timestamp": login_time}
 
 
-@app.get("/users/me/", response_model=User) #test authentication
-async def read_users_me(current_user: User = Depends(get_current_user)):
-    return current_user
+@app.get("/users/me/") #authentication and look into database info for testing purpose
+async def read_database_info(current_user: User = Depends(get_current_user)):
+    db_data = get_db('db.txt')
+    return db_data
 
 
 @app.get("/suggest-booking")
-async def booking(seat: int, current_user: User = Depends(get_current_user)):
+async def suggest_availiable_seat(seat: int, current_user: User = Depends(get_current_user)):
     if seat > 0:
+        layout = create_seat_map('reserved.txt', 0)
         all_seat = get_seat(layout, seat)
         if all_seat:
             return {"all_possible_seat": all_seat}
